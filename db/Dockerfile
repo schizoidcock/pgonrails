@@ -1,4 +1,4 @@
-FROM supabase/postgres:17.5.1.045-orioledb
+FROM supabase/postgres:17.6.1.024
 
 COPY ./scripts/realtime.sql /docker-entrypoint-initdb.d/migrations/99-realtime.sql
 COPY ./scripts/webhooks.sql /docker-entrypoint-initdb.d/init-scripts/98-webhooks.sql
