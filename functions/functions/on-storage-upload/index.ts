@@ -1,5 +1,6 @@
 // functions/on-storage-upload/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 serve(async (req: Request) => {
   try {
@@ -37,15 +38,30 @@ serve(async (req: Request) => {
       return new Response("Ignorado: no es PDF", { status: 200 });
     }
 
-    // Construir URL
-    const fullUrl = `https://kong.up.railway.app/storage/v1/object/public/${bucket}/${fileName}`;
-    console.log("URL construida:", fullUrl);
+    // Inicializar cliente de Supabase
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Crear Signed URL (válida por 1 hora)
+    const { data: signedUrlData, error: signedUrlError } = await supabase
+      .storage
+      .from(bucket)
+      .createSignedUrl(fileName, 3600); // 3600 segundos = 1 hora
+
+    if (signedUrlError) {
+      console.error("Error generando signed URL:", signedUrlError);
+      throw new Error(`Error generando URL: ${signedUrlError.message}`);
+    }
+
+    const signedUrl = signedUrlData.signedUrl;
+    console.log("Signed URL generada:", signedUrl);
 
     // Payload para n8n
     const n8nPayload = {
       bucket,
       file_name: fileName,
-      full_url: fullUrl,
+      full_url: signedUrl, // Ahora es una signed URL
       timestamp: new Date().toISOString()
     };
 
@@ -77,7 +93,8 @@ serve(async (req: Request) => {
 
     return new Response(JSON.stringify({ 
       success: true, 
-      message: "Notificación enviada a n8n" 
+      message: "Notificación enviada a n8n",
+      signed_url_expires: "1 hour"
     }), { 
       status: 200,
       headers: { "Content-Type": "application/json" }
