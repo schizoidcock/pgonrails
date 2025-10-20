@@ -72,7 +72,7 @@ serve(async (req: Request) => {
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
     const n8nResponse = await fetch(
-      "https://platanoia-n8n.up.railway.app/webhook-test/new-file",
+      "https://platanoia-n8n.up.railway.app/webhook/new-file",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
