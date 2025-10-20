@@ -1,1 +1,1 @@
-FROM supabase/storage-api:latest
+FROM supabase/storage-api:v1.28.0
