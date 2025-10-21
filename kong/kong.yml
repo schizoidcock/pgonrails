@@ -167,6 +167,7 @@ services:
           allow:
             - admin
             - anon
+            
   ## Storage routes - the storage server manages its own auth
   - name: storage-v1
     _comment: 'Storage: /storage/v1/* -> http://storage:5000/*'
