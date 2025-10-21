@@ -179,11 +179,6 @@ services:
           - /storage/v1/
     plugins:
       - name: cors
-      - name: request-transformer
-        config:
-          add:
-            headers:
-              - "Forwarded: proto=https"
 
   ## Edge Functions routes
   - name: functions-v1
