@@ -167,11 +167,11 @@ services:
           allow:
             - admin
             - anon
-            
+
   ## Storage routes - the storage server manages its own auth
   - name: storage-v1
     _comment: 'Storage: /storage/v1/* -> http://storage:5000/*'
-    url: url: http://$STORAGE_HOST:$STORAGE_PORT
+    url: http://$STORAGE_HOST:$STORAGE_PORT
     routes:
       - name: storage-v1-all
         strip_path: true
