@@ -170,7 +170,7 @@ services:
   ## Storage routes - the storage server manages its own auth
   - name: storage-v1
     _comment: 'Storage: /storage/v1/* -> http://storage:5000/*'
-    url: http://$STORAGE_HOST:$STORAGE_PORT/
+    url: http://storage:5000
     routes:
       - name: storage-v1-all
         strip_path: true
@@ -182,7 +182,10 @@ services:
         config:
           add:
             headers:
-              - 'Forwarded: host=\$(headers.host)/storage/v1;proto=http'
+              - 'Forwarded: host=$(headers.host)/storage/v1;proto=https'
+          append:
+            headers:
+              - 'Authorization: $(headers.Authorization)'
 
   ## Edge Functions routes
   - name: functions-v1
