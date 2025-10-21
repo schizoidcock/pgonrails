@@ -183,7 +183,7 @@ services:
         config:
           add:
             headers:
-              - "Forwarded: proto=http"
+              - "Forwarded: proto=https"
 
   ## Edge Functions routes
   - name: functions-v1
