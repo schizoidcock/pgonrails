@@ -178,6 +178,11 @@ services:
           - /storage/v1/
     plugins:
       - name: cors
+      - name: request-transformer
+        config:
+          add:
+            headers:
+              - 'Forwarded: host=\$(headers.host)/storage/v1;proto=http'
 
   ## Edge Functions routes
   - name: functions-v1
