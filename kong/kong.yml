@@ -183,7 +183,7 @@ services:
         config:
           add:
             headers:
-              - 'Forwarded: host=$(headers.host)/storage/v1;proto=https'
+              - 'Forwarded: host=$(headers.host);proto=https'
           append:
             headers:
               - 'Authorization: $(headers.Authorization)'
