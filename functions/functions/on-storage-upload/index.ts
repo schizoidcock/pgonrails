@@ -39,29 +39,24 @@ serve(async (req: Request) => {
     }
 
     // Inicializar cliente de Supabase
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_PUBLIC_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Crear Signed URL (válida por 1 hora)
-    const { data: signedUrlData, error: signedUrlError } = await supabase
+    // Obtener URL pública permanente (sin expiración)
+    const { data: publicUrlData } = supabase
       .storage
       .from(bucket)
-      .createSignedUrl(fileName, 3600); // 3600 segundos = 1 hora
+      .getPublicUrl(fileName);
 
-    if (signedUrlError) {
-      console.error("Error generando signed URL:", signedUrlError);
-      throw new Error(`Error generando URL: ${signedUrlError.message}`);
-    }
-
-    const signedUrl = signedUrlData.signedUrl;
-    console.log("Signed URL generada:", signedUrl);
+    const publicUrl = publicUrlData.publicUrl;
+    console.log("URL pública generada:", publicUrl);
 
     // Payload para n8n
     const n8nPayload = {
       bucket,
       file_name: fileName,
-      full_url: signedUrl, // Ahora es una signed URL
+      full_url: publicUrl, // URL pública permanente
       timestamp: new Date().toISOString()
     };
 
@@ -94,7 +89,7 @@ serve(async (req: Request) => {
     return new Response(JSON.stringify({ 
       success: true, 
       message: "Notificación enviada a n8n",
-      signed_url_expires: "1 hour"
+      url_type: "public (no expiration)"
     }), { 
       status: 200,
       headers: { "Content-Type": "application/json" }
