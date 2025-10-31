@@ -1,5 +1,5 @@
 // functions/on-storage-upload/index.ts
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 serve(async (req: Request) => {
@@ -24,7 +24,7 @@ serve(async (req: Request) => {
     // Extraer datos del archivo
     const fileName = payload.record?.name;
     const bucket = payload.record?.bucket_id;
-
+    
     console.log(`Archivo detectado: ${fileName} en bucket: ${bucket}`);
 
     if (!fileName || !bucket) {
@@ -39,8 +39,14 @@ serve(async (req: Request) => {
     }
 
     // Inicializar cliente de Supabase
-    const supabaseUrl = Deno.env.get("SUPABASE_PUBLIC_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_PUBLIC_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error("Faltan variables de entorno");
+      return new Response("Error de configuración", { status: 500 });
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Obtener URL pública permanente (sin expiración)
@@ -56,40 +62,36 @@ serve(async (req: Request) => {
     const n8nPayload = {
       bucket,
       file_name: fileName,
-      full_url: publicUrl, // URL pública permanente
+      full_url: publicUrl,
       timestamp: new Date().toISOString()
     };
 
     console.log("Enviando a n8n:", JSON.stringify(n8nPayload, null, 2));
 
-    // POST a n8n con timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-
-    const n8nResponse = await fetch(
+    // ✅ SOLUCIÓN: No esperar respuesta de n8n, enviar y continuar
+    // Esto previene el timeout
+    fetch(
       "https://platanoia-n8n.up.railway.app/webhook-test/new-file",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(n8nPayload),
-        signal: controller.signal
+        body: JSON.stringify(n8nPayload)
       }
-    );
+    ).then(response => {
+      console.log("✅ Respuesta de n8n:", response.status);
+      return response.text();
+    }).then(text => {
+      console.log("Body de respuesta:", text);
+    }).catch(err => {
+      console.error("⚠️ Error llamando a n8n (no crítico):", err.message);
+    });
 
-    clearTimeout(timeoutId);
-
-    console.log("Respuesta de n8n:", n8nResponse.status);
-    const responseText = await n8nResponse.text();
-    console.log("Body de respuesta:", responseText);
-
-    if (!n8nResponse.ok) {
-      throw new Error(`n8n respondió con status ${n8nResponse.status}: ${responseText}`);
-    }
-
+    // Responder inmediatamente sin esperar a n8n
     return new Response(JSON.stringify({ 
       success: true, 
-      message: "Notificación enviada a n8n",
-      url_type: "public (no expiration)"
+      message: "PDF recibido y notificación enviada a n8n",
+      url_type: "public (no expiration)",
+      file: fileName
     }), { 
       status: 200,
       headers: { "Content-Type": "application/json" }
